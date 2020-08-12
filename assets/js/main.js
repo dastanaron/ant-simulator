@@ -37,8 +37,7 @@ function randomPosition(maxLeft, maxTop) {
 }
 
 function goToLeaf(ant, leaf, anthill) {
-    goToPosition(ant, leaf, 50, (posLeft, posTop) => {
-        console.log(posLeft, posTop);
+    goToPosition(ant, leaf, 2, (posLeft, posTop) => {
         if (posLeft === -1 && posTop === -1) {
             goToAntHill(ant, leaf, anthill)
         }
@@ -46,11 +45,13 @@ function goToLeaf(ant, leaf, anthill) {
 }
 
 function goToAntHill(ant, leaf, antHill) {
-    goToPosition(ant, antHill, 50, (posLeft, posTop) => {
+    goToPosition(ant, antHill, 10, (posLeft, posTop) => {
         leaf.style.left = posLeft + 'px';
         leaf.style.top = posTop + 'px';
         if (posLeft === -1 && posTop === -1) {
-            alert('finish');
+            const workArea = document.querySelector('.workArea');
+            moveElementToPosition(leaf, randomPosition(workArea.clientWidth, workArea.clientHeight));
+            goToLeaf(ant, leaf, antHill);
         }
     })
 }
@@ -67,20 +68,20 @@ function goToPosition(element1, element2, speed= 50, callback) {
     let interval = setInterval(() => {
         const state = [1, 1];
 
-        if (currentPosition2[0] - 10 !== parseInt(element1.style.left)) {
+        if (currentPosition2[0] + (element2.clientWidth / 2) !== parseInt(element1.style.left)) {
             if (differentLeft < 0) {
                 element1.style.left = (parseInt(element1.style.left) - 1) + 'px';
-            } else {
+            } else if (differentLeft !== 0) {
                 element1.style.left = (parseInt(element1.style.left) + 1) + 'px';
             }
         } else {
             state[0] = 0;
         }
 
-        if (currentPosition2[1] - 10 !== parseInt(element1.style.top)) {
+        if (currentPosition2[1] + (element2.clientHeight / 2) !== parseInt(element1.style.top)) {
             if (differentTop < 0) {
                 element1.style.top = (parseInt(element1.style.top) - 1) + 'px';
-            } else {
+            } else if (differentTop !== 0) {
                 element1.style.top = (parseInt(element1.style.top) + 1) + 'px';
             }
         } else {
