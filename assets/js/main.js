@@ -18,6 +18,10 @@ class StackFSM {
     getCurrentState() {
         return this.stack.length > 0 ? this.stack[this.stack.length - 1] : null;
     }
+
+    count() {
+        return this.stack.length;
+    }
 }
 
 class Simulator {
@@ -43,6 +47,8 @@ class Simulator {
         });
         setInterval(() => {
             const currentStateFunction = this.brain.getCurrentState();
+            document.querySelector('.state').textContent = currentStateFunction;
+            document.querySelector('.count-stack').textContent = this.brain.count();
             if (currentStateFunction != null) {
                 this[currentStateFunction]();
             }
@@ -55,7 +61,7 @@ class Simulator {
         this.ant.style.left =  leftCoords + 'px';
         this.ant.style.top =  topCoords + 'px';
 
-        if (this.mouseDistanceXFromAnt < 100 || this.mouseDistanceYFromAnt < 100) {
+        if (this.mouseDistanceXFromAnt < 20 || this.mouseDistanceYFromAnt < 20) {
             this.brain.pushState('goAway');
         }
 
@@ -73,7 +79,7 @@ class Simulator {
         this.leaf.style.left = leftCoords + 'px';
         this.leaf.style.top = topCoords + 'px'
 
-        if (this.mouseDistanceXFromAnt < 100 || this.mouseDistanceYFromAnt < 100) {
+        if (this.mouseDistanceXFromAnt < 20 || this.mouseDistanceYFromAnt < 20) {
             this.brain.pushState('goAway');
         }
 
@@ -85,7 +91,7 @@ class Simulator {
     }
 
     goAway() {
-        if (this.mouseDistanceXFromAnt >= 100 && this.mouseDistanceYFromAnt >= 100) {
+        if (Math.abs(parseInt(this.ant.style.left) - this.mouseX) >= 100 && Math.abs(parseInt(this.ant.style.top) - this.mouseY) >= 100) {
             this.brain.popState();
             this.brain.pushState('goToLeaf');
         }
