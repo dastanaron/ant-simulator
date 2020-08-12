@@ -1,5 +1,103 @@
 document.addEventListener("DOMContentLoaded", start);
 
+class StackFSM {
+    constructor() {
+        this.stack = [];
+    }
+
+    popState() {
+        return this.stack.pop();
+    }
+
+    pushState(state) {
+        if (this.getCurrentState() !== state) {
+            this.stack.push(state);
+        }
+    }
+
+    getCurrentState() {
+        return this.stack.length > 0 ? this.stack[this.stack.length - 1] : null;
+    }
+}
+
+class Simulator {
+    constructor(antElement, leafElement, antHillElement, workArea) {
+        this.brain = new StackFSM();
+        this.ant = antElement;
+        this.leaf = leafElement;
+        this.antHill = antHillElement;
+        this.workArea = workArea;
+        this.brain.pushState('goToLeaf');
+        this.mouseDistanceXFromAnt = 1000;
+        this.mouseDistanceYFromAnt = 1000;
+        this.mouseX = 0;
+        this.mouseY = 0;
+    }
+
+    run() {
+        this.workArea.addEventListener('mousemove', (event) => {
+            this.mouseX = event.clientX;
+            this.mouseY = event.clientY;
+            this.mouseDistanceXFromAnt = Math.abs(parseInt(this.ant.style.left) - this.mouseX);
+            this.mouseDistanceYFromAnt = Math.abs(parseInt(this.ant.style.top) - this.mouseY);
+        });
+        setInterval(() => {
+            const currentStateFunction = this.brain.getCurrentState();
+            if (currentStateFunction != null) {
+                this[currentStateFunction]();
+            }
+        }, 5);
+    }
+
+    goToLeaf() {
+        const leftCoords = approximationNumber(parseInt(this.ant.style.left), parseInt(this.leaf.style.left));
+        const topCoords  = approximationNumber(parseInt(this.ant.style.top), parseInt(this.leaf.style.top));
+        this.ant.style.left =  leftCoords + 'px';
+        this.ant.style.top =  topCoords + 'px';
+
+        if (this.mouseDistanceXFromAnt < 100 || this.mouseDistanceYFromAnt < 100) {
+            this.brain.pushState('goAway');
+        }
+
+        if (leftCoords === parseInt(this.leaf.style.left) && topCoords === parseInt(this.leaf.style.top)) {
+            this.brain.popState();
+            this.brain.pushState('goToHome');
+        }
+    }
+
+    goToHome() {
+        const leftCoords = approximationNumber(parseInt(this.ant.style.left), parseInt(this.antHill.style.left));
+        const topCoords  = approximationNumber(parseInt(this.ant.style.top), parseInt(this.antHill.style.top));
+        this.ant.style.left = leftCoords + 'px';
+        this.ant.style.top = topCoords + 'px';
+        this.leaf.style.left = leftCoords + 'px';
+        this.leaf.style.top = topCoords + 'px'
+
+        if (this.mouseDistanceXFromAnt < 100 || this.mouseDistanceYFromAnt < 100) {
+            this.brain.pushState('goAway');
+        }
+
+        if (leftCoords === parseInt(this.antHill.style.left) && topCoords === parseInt(this.antHill.style.top)) {
+            this.brain.popState();
+            moveElementToPosition(this.leaf, randomPosition(this.workArea.clientWidth, this.workArea.clientHeight));
+            this.brain.pushState('goToLeaf');
+        }
+    }
+
+    goAway() {
+        if (this.mouseDistanceXFromAnt >= 100 && this.mouseDistanceYFromAnt >= 100) {
+            this.brain.popState();
+            this.brain.pushState('goToLeaf');
+        }
+
+        const leftCoords = distancingNumber(parseInt(this.ant.style.left), parseInt(this.mouseX));
+        const topCoords  = distancingNumber(parseInt(this.ant.style.top), parseInt(this.mouseY));
+
+        this.ant.style.left = leftCoords + 'px';
+        this.ant.style.top = topCoords + 'px';
+    }
+}
+
 function start() {
     const workArea = document.querySelector('.workArea');
 
@@ -12,7 +110,9 @@ function start() {
     const anthill = document.querySelector('svg#anthill');
     moveElementToPosition(anthill, randomPosition(workArea.clientWidth, workArea.clientHeight));
 
-    goToLeaf(ant, leaf, anthill);
+    const simulator = new Simulator(ant, leaf, anthill, workArea);
+
+    simulator.run();
 }
 
 
@@ -36,67 +136,28 @@ function randomPosition(maxLeft, maxTop) {
     return [left, top];
 }
 
-function goToLeaf(ant, leaf, anthill) {
-    computeMovingVector(ant, leaf, (posLeft, posTop) => {
-        ant.style.left = posLeft + 'px';
-        ant.style.top = posTop + 'px';
-    },(stateLeft, stateTop) => {
-        if (stateLeft === 0 && stateTop === 0) {
-            goToAntHill(ant, leaf, anthill)
-        }
-    }, 2);
+function approximationNumber(a, b) {
+    let resultNumber = a;
+    if(resultNumber < b) {
+        resultNumber++;
+        return resultNumber;
+    } else if(resultNumber === b) {
+        return resultNumber;
+    } else {
+        resultNumber--;
+        return resultNumber;
+    }
 }
 
-function goToAntHill(ant, leaf, antHill) {
-    computeMovingVector(ant, antHill,(posLeft, posTop) => {
-        ant.style.left  = posLeft + 'px';
-        ant.style.top   = posTop + 'px';
-        leaf.style.left = posLeft + 'px';
-        leaf.style.top  = posTop + 'px';
-    },(stateLeft, stateTop) => {
-        if (stateLeft === 0 && stateTop === 0) {
-            const workArea = document.querySelector('.workArea');
-            moveElementToPosition(leaf, randomPosition(workArea.clientWidth, workArea.clientHeight));
-            goToLeaf(ant, leaf, antHill);
-        }
-    }, 5);
-}
-
-function computeMovingVector(element1, element2, callback, stateCallback, speed= 50) {
-    const activeState = [1, 1];
-    const coords = [0, 0];
-    approximationNumber(parseInt(element1.style.left), parseInt(element2.style.left), (result) => {
-        coords[0] = result;
-        callback(...coords);
-    }, speed).then(res => {
-        activeState[0] = res;
-        stateCallback(...activeState);
-    });
-
-    approximationNumber(parseInt(element1.style.top), parseInt(element2.style.top), (result) => {
-        coords[1] = result;
-        callback(...coords);
-    }, speed).then(res => {
-        activeState[1] = res;
-        stateCallback(...activeState);
-    });
-}
-
-
-function approximationNumber(a, b, callback, speed = 50) {
-    return new Promise((resolve, reject ) => {
-        let resultNumber = a;
-        let interval = setInterval(() => {
-            if(resultNumber < b) {
-                resultNumber++;
-                callback(resultNumber);
-            } else if(resultNumber === b) {
-                clearInterval(interval);
-                resolve(0);
-            } else {
-                resultNumber--;
-                callback(resultNumber);
-            }
-        }, speed);
-    });
+function distancingNumber(a, b) {
+    let resultNumber = a;
+    if(resultNumber < b) {
+        resultNumber--;
+        return resultNumber;
+    } else if(resultNumber === b) {
+        return resultNumber;
+    } else {
+        resultNumber++;
+        return resultNumber;
+    }
 }
