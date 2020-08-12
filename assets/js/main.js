@@ -37,63 +37,66 @@ function randomPosition(maxLeft, maxTop) {
 }
 
 function goToLeaf(ant, leaf, anthill) {
-    goToPosition(ant, leaf, 2, (posLeft, posTop) => {
-        if (posLeft === -1 && posTop === -1) {
+    computeMovingVector(ant, leaf, (posLeft, posTop) => {
+        ant.style.left = posLeft + 'px';
+        ant.style.top = posTop + 'px';
+    },(stateLeft, stateTop) => {
+        if (stateLeft === 0 && stateTop === 0) {
             goToAntHill(ant, leaf, anthill)
         }
-    })
+    }, 2);
 }
 
 function goToAntHill(ant, leaf, antHill) {
-    goToPosition(ant, antHill, 10, (posLeft, posTop) => {
+    computeMovingVector(ant, antHill,(posLeft, posTop) => {
+        ant.style.left  = posLeft + 'px';
+        ant.style.top   = posTop + 'px';
         leaf.style.left = posLeft + 'px';
-        leaf.style.top = posTop + 'px';
-        if (posLeft === -1 && posTop === -1) {
+        leaf.style.top  = posTop + 'px';
+    },(stateLeft, stateTop) => {
+        if (stateLeft === 0 && stateTop === 0) {
             const workArea = document.querySelector('.workArea');
             moveElementToPosition(leaf, randomPosition(workArea.clientWidth, workArea.clientHeight));
             goToLeaf(ant, leaf, antHill);
         }
-    })
+    }, 5);
 }
 
-function goToPosition(element1, element2, speed= 50, callback) {
-    const currentPosition1  = [parseInt(element1.style.left), parseInt(element1.style.top)];
-    const currentPosition2 = [parseInt(element2.style.left), parseInt(element2.style.top)];
+function computeMovingVector(element1, element2, callback, stateCallback, speed= 50) {
+    const activeState = [1, 1];
+    const coords = [0, 0];
+    approximationNumber(parseInt(element1.style.left), parseInt(element2.style.left), (result) => {
+        coords[0] = result;
+        callback(...coords);
+    }, speed).then(res => {
+        activeState[0] = res;
+        stateCallback(...activeState);
+    });
 
-    const differentLeft = currentPosition2[0] - currentPosition1[0];
-    const differentTop  = currentPosition2[1] - currentPosition1[1];
+    approximationNumber(parseInt(element1.style.top), parseInt(element2.style.top), (result) => {
+        coords[1] = result;
+        callback(...coords);
+    }, speed).then(res => {
+        activeState[1] = res;
+        stateCallback(...activeState);
+    });
+}
 
-    console.log(differentLeft, differentTop);
 
-    let interval = setInterval(() => {
-        const state = [1, 1];
-
-        if (currentPosition2[0] + (element2.clientWidth / 2) !== parseInt(element1.style.left)) {
-            if (differentLeft < 0) {
-                element1.style.left = (parseInt(element1.style.left) - 1) + 'px';
-            } else if (differentLeft !== 0) {
-                element1.style.left = (parseInt(element1.style.left) + 1) + 'px';
+function approximationNumber(a, b, callback, speed = 50) {
+    return new Promise((resolve, reject ) => {
+        let resultNumber = a;
+        let interval = setInterval(() => {
+            if(resultNumber < b) {
+                resultNumber++;
+                callback(resultNumber);
+            } else if(resultNumber === b) {
+                clearInterval(interval);
+                resolve(0);
+            } else {
+                resultNumber--;
+                callback(resultNumber);
             }
-        } else {
-            state[0] = 0;
-        }
-
-        if (currentPosition2[1] + (element2.clientHeight / 2) !== parseInt(element1.style.top)) {
-            if (differentTop < 0) {
-                element1.style.top = (parseInt(element1.style.top) - 1) + 'px';
-            } else if (differentTop !== 0) {
-                element1.style.top = (parseInt(element1.style.top) + 1) + 'px';
-            }
-        } else {
-            state[1] = 0;
-        }
-
-        callback(parseInt(element1.style.left), parseInt(element1.style.top))
-
-        if (state[0] === 0 && state[1] === 0) {
-            clearInterval(interval);
-            callback(-1, -1);
-        }
-
-    }, speed);
+        }, speed);
+    });
 }
