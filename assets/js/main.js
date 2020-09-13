@@ -9,12 +9,18 @@ class StackFSM {
         return this.stack.pop();
     }
 
+    /**
+     * @param {String} state 
+     */
     pushState(state) {
         if (this.getCurrentState() !== state) {
             this.stack.push(state);
         }
     }
 
+    /**
+     * @returns {String | null}
+     */
     getCurrentState() {
         return this.stack.length > 0 ? this.stack[this.stack.length - 1] : null;
     }
@@ -25,6 +31,12 @@ class StackFSM {
 }
 
 class Simulator {
+    /**
+     * @param {Element} antElement 
+     * @param {Element} leafElement 
+     * @param {Element} antHillElement 
+     * @param {Element} workArea 
+     */
     constructor(antElement, leafElement, antHillElement, workArea) {
         this.brain = new StackFSM();
         this.ant = antElement;
@@ -121,12 +133,22 @@ function start() {
     simulator.run();
 }
 
-
+/**
+ * 
+ * @param {Element} element 
+ * @param {Number[]} position 
+ */
 function moveElementToPosition(element, position) {
     element.style.left = position[0] + 'px';
     element.style.top = position[1] + 'px';
 }
 
+/**
+ * 
+ * @param {Number} maxLeft 
+ * @param {Number} maxTop 
+ * @returns {Number[]}
+ */
 function randomPosition(maxLeft, maxTop) {
     let left = Math.round(0 - 0.5 + Math.random() * (maxLeft - 0 + 1));
     let top  = Math.round(0 - 0.5 + Math.random() * (maxTop - 0 + 1));
@@ -142,6 +164,10 @@ function randomPosition(maxLeft, maxTop) {
     return [left, top];
 }
 
+/**
+ * @param {Number} a 
+ * @param {Number} b 
+ */
 function approximationNumber(a, b) {
     let resultNumber = a;
     if(resultNumber < b) {
@@ -155,6 +181,11 @@ function approximationNumber(a, b) {
     }
 }
 
+/**
+ * 
+ * @param {Number} a 
+ * @param {Number} b 
+ */
 function distancingNumber(a, b) {
     let resultNumber = a;
     if(resultNumber < b) {
